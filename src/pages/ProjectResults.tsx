@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate, useParams } from "react-router-dom";
 import { db, Project } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
+import { exportProjectToPDF, shareProject } from "@/utils/pdfExport";
 
 const ProjectResults = () => {
   const navigate = useNavigate();
@@ -106,39 +107,40 @@ const ProjectResults = () => {
   const handleShare = async () => {
     if (!project) return;
 
-    const shareText = `
-مشروع: ${project.name}
-المساحة: ${project.length}م × ${project.width}م
-الطوابق: ${project.floors}
+    const result = await shareProject(project);
+    
+    if (result === 'copied') {
+      toast({
+        title: "تم النسخ",
+        description: "تم نسخ تفاصيل المشروع إلى الحافظة",
+        variant: "default"
+      });
+    } else if (result === false) {
+      toast({
+        title: "خطأ في المشاركة",
+        description: "حدث خطأ أثناء مشاركة المشروع",
+        variant: "destructive"
+      });
+    }
+  };
 
-المواد المطلوبة:
-• الطوب: ${project.bricks.toLocaleString('ar-DZ')} وحدة
-• الإسمنت: ${project.cement.toLocaleString('ar-DZ')} كيس
-• الرمل: ${project.sand.toLocaleString('ar-DZ', { maximumFractionDigits: 1 })} م³
-• الحديد: ${project.steel.toLocaleString('ar-DZ')} كغ
-• الحصى: ${project.gravel.toLocaleString('ar-DZ', { maximumFractionDigits: 1 })} م³
-
-التكلفة الإجمالية: ${project.finalCost.toLocaleString('ar-DZ')} د.ج
-
-تم الحساب بواسطة حاسبة مواد البناء
-    `.trim();
-
+  const handleExportPDF = () => {
+    if (!project) return;
+    
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `مشروع ${project.name}`,
-          text: shareText
-        });
-      } else {
-        await navigator.clipboard.writeText(shareText);
-        toast({
-          title: "تم النسخ",
-          description: "تم نسخ تفاصيل المشروع إلى الحافظة",
-          variant: "default"
-        });
-      }
+      exportProjectToPDF(project);
+      toast({
+        title: "تم التصدير",
+        description: "تم تصدير التقرير بنجاح",
+        variant: "default"
+      });
     } catch (error) {
-      console.error('خطأ في المشاركة:', error);
+      console.error('خطأ في التصدير:', error);
+      toast({
+        title: "خطأ في التصدير",
+        description: "حدث خطأ أثناء تصدير التقرير",
+        variant: "destructive"
+      });
     }
   };
 
@@ -191,6 +193,14 @@ const ProjectResults = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExportPDF}
+                className="text-success-foreground hover:bg-success-foreground/20"
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"

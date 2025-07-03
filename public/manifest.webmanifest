@@ -1,0 +1,50 @@
+{
+  "name": "حاسبة مواد البناء - مقدر التكلفة",
+  "short_name": "حاسبة البناء",
+  "description": "تطبيق لحساب كميات وتكاليف مواد البناء باللغة العربية - يعمل بدون إنترنت",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#1e40af",
+  "background_color": "#faf8f6",
+  "dir": "rtl",
+  "lang": "ar",
+  "scope": "/",
+  "categories": ["construction", "calculator", "productivity"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "مشروع جديد",
+      "short_name": "جديد",
+      "description": "ابدأ حساب مشروع جديد",
+      "url": "/calculator",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "مشاريعي",
+      "short_name": "مشاريعي",
+      "description": "استعرض المشاريع المحفوظة",
+      "url": "/projects",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
