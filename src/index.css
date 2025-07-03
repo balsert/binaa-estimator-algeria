@@ -1,42 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Arabic Construction Material Estimator Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Construction-themed color palette */
+    --background: 28 20% 98%;
+    --foreground: 28 25% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 28 25% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 28 25% 8%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Construction blue - professional and trustworthy */
+    --primary: 208 90% 35%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 208 90% 55%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Earth tone secondary */
+    --secondary: 28 30% 92%;
+    --secondary-foreground: 28 25% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Construction orange accent */
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 98%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Muted earth tones */
+    --muted: 28 20% 95%;
+    --muted-foreground: 28 15% 45%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Success green for calculations */
+    --success: 120 60% 35%;
+    --success-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Warning amber for estimates */
+    --warning: 45 90% 60%;
+    --warning-foreground: 28 25% 8%;
 
-    --radius: 0.5rem;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 28 20% 88%;
+    --input: 28 20% 95%;
+    --ring: 208 90% 35%;
+
+    --radius: 0.75rem;
+
+    /* Construction-themed gradients */
+    --gradient-construction: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-earth: linear-gradient(135deg, hsl(var(--accent)), hsl(25 85% 65%));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
+
+    /* Elegant shadows with construction blue */
+    --shadow-construction: 0 10px 30px -10px hsl(var(--primary) / 0.3);
+    --shadow-card: 0 4px 20px -8px hsl(var(--primary) / 0.15);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.2);
+
+    /* Smooth animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     --sidebar-background: 0 0% 98%;
 
@@ -56,41 +84,54 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark construction theme */
+    --background: 28 15% 8%;
+    --foreground: 28 15% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 28 15% 10%;
+    --card-foreground: 28 15% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 28 15% 10%;
+    --popover-foreground: 28 15% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Dark construction blue */
+    --primary: 208 90% 55%;
+    --primary-foreground: 28 15% 8%;
+    --primary-glow: 208 90% 70%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Dark earth tones */
+    --secondary: 28 15% 15%;
+    --secondary-foreground: 28 15% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    /* Dark construction orange */
+    --accent: 25 95% 53%;
+    --accent-foreground: 28 15% 8%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 28 15% 12%;
+    --muted-foreground: 28 10% 60%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --success: 120 60% 50%;
+    --success-foreground: 28 15% 8%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --warning: 45 90% 60%;
+    --warning-foreground: 28 15% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 28 15% 95%;
+
+    --border: 28 15% 20%;
+    --input: 28 15% 15%;
+    --ring: 208 90% 55%;
+
+    /* Dark construction gradients */
+    --gradient-construction: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-earth: linear-gradient(135deg, hsl(var(--accent)), hsl(25 85% 65%));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
+
+    /* Dark shadows */
+    --shadow-construction: 0 10px 30px -10px hsl(var(--primary) / 0.4);
+    --shadow-card: 0 4px 20px -8px hsl(var(--primary) / 0.2);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.3);
   }
 }
 
@@ -100,6 +141,99 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-arabic;
+    direction: rtl;
+  }
+}
+
+@layer components {
+  /* Construction-themed components */
+  .btn-construction {
+    @apply bg-gradient-to-r from-primary to-primary-glow text-primary-foreground;
+    @apply hover:shadow-construction transition-all duration-300;
+    @apply transform hover:scale-105 active:scale-95;
+  }
+
+  .btn-earth {
+    @apply bg-gradient-to-r from-accent to-orange-400 text-accent-foreground;
+    @apply hover:shadow-lg transition-all duration-300;
+  }
+
+  .card-construction {
+    @apply bg-card border border-border rounded-lg;
+    @apply shadow-card hover:shadow-construction transition-all duration-300;
+  }
+
+  .input-arabic {
+    @apply bg-input border border-border rounded-md px-3 py-2;
+    @apply text-right placeholder:text-right;
+    @apply focus:ring-2 focus:ring-primary focus:border-transparent;
+    @apply transition-all duration-200;
+  }
+
+  /* Arabic number styling */
+  .arabic-numbers {
+    font-feature-settings: "lnum" 0;
+    font-variant-numeric: normal;
+  }
+
+  /* Gradient backgrounds */
+  .bg-construction {
+    background: var(--gradient-construction);
+  }
+
+  .bg-earth {
+    background: var(--gradient-earth);
+  }
+
+  .bg-subtle {
+    background: var(--gradient-subtle);
+  }
+
+  /* Animation utilities */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.5s ease-out forwards;
+  }
+
+  .animate-bounce-gentle {
+    animation: bounceGentle 2s ease-in-out infinite;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceGentle {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
   }
 }
