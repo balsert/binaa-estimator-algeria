@@ -12,6 +12,7 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import Layout from "./components/Layout";
+import MobileOptimized from "./components/MobileOptimized";
 
 const queryClient = new QueryClient();
 
@@ -20,21 +21,23 @@ const AppContent = () => {
   const showBottomNav = !location.pathname.includes('/project/');
 
   return (
-    <Layout>
-      <div className={showBottomNav ? "pb-20" : ""}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/calculator" element={<Calculator />} />
-          <Route path="/project/:projectId" element={<ProjectResults />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/about" element={<About />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </div>
-      {showBottomNav && <BottomNav />}
-    </Layout>
+    <MobileOptimized>
+      <Layout>
+        <div className={showBottomNav ? "pb-20" : ""}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/calculator" element={<Calculator />} />
+            <Route path="/project/:projectId" element={<ProjectResults />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/about" element={<About />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
+        {showBottomNav && <BottomNav />}
+      </Layout>
+    </MobileOptimized>
   );
 };
 

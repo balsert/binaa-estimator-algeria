@@ -4,13 +4,20 @@
   "description": "تطبيق لحساب كميات وتكاليف مواد البناء باللغة العربية - يعمل بدون إنترنت",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "theme_color": "#1e40af",
   "background_color": "#faf8f6",
   "dir": "rtl",
   "lang": "ar",
   "scope": "/",
   "categories": ["construction", "calculator", "productivity"],
+  "prefer_related_applications": true,
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "com.constructioncalculator.app"
+    }
+  ],
   "icons": [
     {
       "src": "/pwa-192x192.png",
@@ -46,5 +53,9 @@
       "url": "/projects",
       "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
     }
-  ]
+  ],
+  "display_override": ["window-controls-overlay", "standalone"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }

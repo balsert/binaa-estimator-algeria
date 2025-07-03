@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">حاسبة مواد البناء</string>
+    <string name="title_activity_main">حاسبة مواد البناء</string>
+    <string name="package_name">com.constructioncalculator.app</string>
+    <string name="custom_url_scheme">com.constructioncalculator.app</string>
+</resources>
