@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calculator, FolderOpen, Settings, Info, Plus } from "lucide-react";
+import { Calculator, FolderOpen, Settings, Info, Plus, BarChart3, Wrench } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { db, Project } from "@/lib/database";
+import { useCapacitor } from "@/hooks/useCapacitor";
 
 const Home = () => {
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  const { hapticFeedback } = useCapacitor();
 
   useEffect(() => {
     const loadRecentProjects = async () => {
@@ -42,6 +44,20 @@ const Home = () => {
       color: "btn-earth"
     },
     {
+      title: "التحليلات",
+      description: "إحصائيات ومقارنات المشاريع",
+      icon: BarChart3,
+      to: "/analytics",
+      color: "bg-success text-success-foreground hover:bg-success/80"
+    },
+    {
+      title: "أدوات البناء",
+      description: "حاسبات متخصصة للمواد",
+      icon: Wrench,
+      to: "/tools",
+      color: "bg-warning text-warning-foreground hover:bg-warning/80"
+    },
+    {
       title: "الإعدادات",
       description: "تعديل أسعار المواد والخيارات",
       icon: Settings,
@@ -57,8 +73,12 @@ const Home = () => {
     }
   ];
 
+  const handleMenuClick = () => {
+    hapticFeedback();
+  };
+
   return (
-    <div className="min-h-screen bg-subtle">
+    <div className="min-h-screen bg-subtle safe-area-top">
       {/* Header */}
       <motion.header 
         className="bg-construction text-primary-foreground shadow-construction"
@@ -66,7 +86,7 @@ const Home = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-6 safe-area-left safe-area-right">
           <div className="flex items-center justify-center gap-3">
             <motion.div
               className="animate-bounce-gentle"
@@ -83,7 +103,7 @@ const Home = () => {
         </div>
       </motion.header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 safe-area-left safe-area-right">
         {/* Welcome Card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -116,8 +136,8 @@ const Home = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Link to={item.to}>
-                <Card className="card-construction hover:shadow-construction transition-all duration-300">
+              <Link to={item.to} onClick={handleMenuClick}>
+                <Card className="card-construction hover:shadow-construction transition-all duration-300 touch-target">
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4">
                       <div className={`p-3 rounded-lg ${item.color}`}>
@@ -151,8 +171,8 @@ const Home = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 * index }}
                 >
-                  <Link to={`/project/${project.id}`}>
-                    <Card className="card-construction hover:shadow-card transition-all duration-200">
+                  <Link to={`/project/${project.id}`} onClick={handleMenuClick}>
+                    <Card className="card-construction hover:shadow-card transition-all duration-200 touch-target">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-center">
                           <div className="text-right">
