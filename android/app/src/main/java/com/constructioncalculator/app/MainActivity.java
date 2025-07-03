@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package com.constructioncalculator.app;
 
 import com.getcapacitor.BridgeActivity;
 
