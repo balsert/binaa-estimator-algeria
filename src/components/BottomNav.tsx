@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
-import { Home, Calculator, FolderOpen, Settings } from "lucide-react";
+import { Home, Calculator, FolderOpen, Settings, BarChart3 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useCapacitor } from "@/hooks/useCapacitor";
 
 const BottomNav = () => {
   const location = useLocation();
+  const { hapticFeedback } = useCapacitor();
 
   const navItems = [
     {
@@ -18,6 +20,11 @@ const BottomNav = () => {
       path: "/calculator",
     },
     {
+      icon: BarChart3,
+      label: "التحليلات",
+      path: "/analytics",
+    },
+    {
       icon: FolderOpen,
       label: "مشاريعي",
       path: "/projects",
@@ -29,12 +36,16 @@ const BottomNav = () => {
     },
   ];
 
+  const handleNavClick = () => {
+    hapticFeedback();
+  };
+
   return (
     <motion.nav
       initial={{ y: 100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
-      className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-construction z-50"
+      className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-construction z-50 safe-area-bottom"
     >
       <div className="flex items-center justify-around py-2">
         {navItems.map((item) => {
@@ -43,8 +54,9 @@ const BottomNav = () => {
             <Link
               key={item.path}
               to={item.path}
+              onClick={handleNavClick}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200",
+                "flex flex-col items-center gap-1 px-2 py-2 rounded-lg transition-all duration-200 touch-target",
                 isActive 
                   ? "text-primary bg-primary/10" 
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
