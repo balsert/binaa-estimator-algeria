@@ -8,9 +8,11 @@ interface FloorPlanProps {
   floors: number;
   rooms?: number;
   bathrooms?: number;
+  includeWall?: boolean;
+  includeSlab?: boolean;
 }
 
-const ConstructionVisuals = ({ length, width, floors, rooms, bathrooms }: FloorPlanProps) => {
+const ConstructionVisuals = ({ length, width, floors, rooms, bathrooms, includeWall, includeSlab }: FloorPlanProps) => {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}

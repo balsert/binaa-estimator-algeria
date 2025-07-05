@@ -255,7 +255,7 @@ const Home = () => {
         )}
 
         {/* Construction Steps */}
-        <ConstructionSteps currentStep={1} />
+        <ConstructionSteps />
 
         {/* Material Gallery */}
         <MaterialGallery />

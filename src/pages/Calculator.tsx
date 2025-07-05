@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { db, Project, AppSettings, calculateMaterials, initializeSettings } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
 import { buildingTypes } from "@/components/MaterialIcons";
+import ConstructionVisuals from "@/components/ConstructionVisuals";
 
 const Calculator = () => {
   const navigate = useNavigate();
