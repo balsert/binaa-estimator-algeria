@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useNavigate } from "react-router-dom";
 import { db, Project, AppSettings, calculateMaterials, initializeSettings } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
+import { buildingTypes } from "@/components/MaterialIcons";
 
 const Calculator = () => {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ const Calculator = () => {
 
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [selectedBuildingType, setSelectedBuildingType] = useState("house");
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -158,21 +160,35 @@ const Calculator = () => {
   };
 
   const roofOptions = [
-    { value: "concrete", label: "سقف خرساني" },
-    { value: "tiles", label: "سقف بالتول" },
-    { value: "none", label: "بدون سقف" }
+    { value: "concrete", label: "سقف خرساني 🏗️" },
+    { value: "tiles", label: "سقف بالتول 🏠" },
+    { value: "none", label: "بدون سقف ⭕" }
+  ];
+
+  const buildingTypeOptions = [
+    { value: "house", label: "منزل عائلي", ...buildingTypes.house },
+    { value: "apartment", label: "شقة سكنية", ...buildingTypes.apartment },
+    { value: "villa", label: "فيلا فاخرة", ...buildingTypes.villa }
   ];
 
   return (
     <div className="min-h-screen bg-subtle">
       {/* Header */}
       <motion.header 
-        className="bg-construction text-primary-foreground shadow-construction"
+        className="bg-construction text-primary-foreground shadow-construction relative overflow-hidden"
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="container mx-auto px-4 py-4">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-4 left-8 text-3xl">🧮</div>
+          <div className="absolute top-8 right-12 text-2xl">📐</div>
+          <div className="absolute bottom-4 left-16 text-xl">🏗️</div>
+          <div className="absolute bottom-6 right-8 text-2xl">📊</div>
+        </div>
+        
+        <div className="container mx-auto px-4 py-4 relative">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -183,14 +199,20 @@ const Calculator = () => {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-3">
-              <CalculatorIcon className="h-6 w-6" />
-              <h1 className="text-xl font-bold">حاسبة مواد البناء</h1>
+              <div className="w-12 h-12 bg-primary-foreground/20 rounded-full flex items-center justify-center">
+                <CalculatorIcon className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">حاسبة مواد البناء</h1>
+                <p className="text-primary-foreground/80 text-sm">احسب كميات وتكاليف مشروعك</p>
+              </div>
             </div>
           </div>
         </div>
       </motion.header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Building Type Selection */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -198,12 +220,66 @@ const Calculator = () => {
         >
           <Card className="card-construction">
             <CardHeader>
-              <CardTitle className="text-center">بيانات المشروع</CardTitle>
+              <CardTitle className="text-center flex items-center justify-center gap-2">
+                <span className="text-xl">🏠</span>
+                نوع المبنى
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {buildingTypeOptions.map((type) => (
+                  <motion.div
+                    key={type.value}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`cursor-pointer rounded-lg border-2 transition-all duration-300 ${
+                      selectedBuildingType === type.value
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedBuildingType(type.value)}
+                  >
+                    <div className="p-4 text-center">
+                      <img 
+                        src={type.image} 
+                        alt={type.label}
+                        className="w-full h-24 object-cover rounded-lg mb-3"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling!.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden text-4xl mb-3">{type.icon}</div>
+                      <h3 className="font-semibold">{type.label}</h3>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Project Form */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Card className="card-construction">
+            <CardHeader>
+              <CardTitle className="text-center flex items-center justify-center gap-2">
+                <span className="text-xl">📋</span>
+                بيانات المشروع
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Project Name */}
               <div className="space-y-2">
-                <Label htmlFor="name">اسم المشروع (اختياري)</Label>
+                <Label htmlFor="name" className="flex items-center gap-2">
+                  <span>🏷️</span>
+                  اسم المشروع (اختياري)
+                </Label>
                 <Input
                   id="name"
                   className="input-arabic"
@@ -216,7 +292,10 @@ const Calculator = () => {
               {/* Dimensions */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="length">الطول (متر)</Label>
+                  <Label htmlFor="length" className="flex items-center gap-2">
+                    <span>📏</span>
+                    الطول (متر)
+                  </Label>
                   <Input
                     id="length"
                     type="number"
@@ -227,7 +306,10 @@ const Calculator = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="width">العرض (متر)</Label>
+                  <Label htmlFor="width" className="flex items-center gap-2">
+                    <span>📐</span>
+                    العرض (متر)
+                  </Label>
                   <Input
                     id="width"
                     type="number"
@@ -242,21 +324,27 @@ const Calculator = () => {
               {/* Floors and Height */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="floors">عدد الطوابق</Label>
+                  <Label htmlFor="floors" className="flex items-center gap-2">
+                    <span>🏢</span>
+                    عدد الطوابق
+                  </Label>
                   <Select value={formData.floors} onValueChange={(value) => handleInputChange('floors', value)}>
                     <SelectTrigger className="input-arabic">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">طابق واحد</SelectItem>
-                      <SelectItem value="2">طابقان</SelectItem>
-                      <SelectItem value="3">ثلاثة طوابق</SelectItem>
-                      <SelectItem value="4">أربعة طوابق</SelectItem>
+                      <SelectItem value="1">طابق واحد 🏠</SelectItem>
+                      <SelectItem value="2">طابقان 🏢</SelectItem>
+                      <SelectItem value="3">ثلاثة طوابق 🏗️</SelectItem>
+                      <SelectItem value="4">أربعة طوابق 🏙️</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ceilingHeight">ارتفاع السقف (متر)</Label>
+                  <Label htmlFor="ceilingHeight" className="flex items-center gap-2">
+                    <span>📏</span>
+                    ارتفاع السقف (متر)
+                  </Label>
                   <Input
                     id="ceilingHeight"
                     type="number"
@@ -270,44 +358,62 @@ const Calculator = () => {
 
               {/* Wall Thickness */}
               <div className="space-y-2">
-                <Label htmlFor="wallThickness">سمك الجدران (سم)</Label>
+                <Label htmlFor="wallThickness" className="flex items-center gap-2">
+                  <span>🧱</span>
+                  سمك الجدران (سم)
+                </Label>
                 <Select value={formData.wallThickness} onValueChange={(value) => handleInputChange('wallThickness', value)}>
                   <SelectTrigger className="input-arabic">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="15">15 سم</SelectItem>
-                    <SelectItem value="20">20 سم</SelectItem>
-                    <SelectItem value="25">25 سم</SelectItem>
-                    <SelectItem value="30">30 سم</SelectItem>
+                    <SelectItem value="15">15 سم - جدران خفيفة</SelectItem>
+                    <SelectItem value="20">20 سم - جدران عادية</SelectItem>
+                    <SelectItem value="25">25 سم - جدران قوية</SelectItem>
+                    <SelectItem value="30">30 سم - جدران فائقة القوة</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Construction Options */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="includeWall">يشمل سور خارجي</Label>
-                  <Switch
-                    id="includeWall"
-                    checked={formData.includeWall}
-                    onCheckedChange={(checked) => handleInputChange('includeWall', checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="includeSlab">يشمل بلاطة خرسانية</Label>
-                  <Switch
-                    id="includeSlab"
-                    checked={formData.includeSlab}
-                    onCheckedChange={(checked) => handleInputChange('includeSlab', checked)}
-                  />
+              <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <span>⚙️</span>
+                  خيارات البناء
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="includeWall" className="flex items-center gap-2">
+                      <span>🧱</span>
+                      يشمل سور خارجي
+                    </Label>
+                    <Switch
+                      id="includeWall"
+                      checked={formData.includeWall}
+                      onCheckedChange={(checked) => handleInputChange('includeWall', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="includeSlab" className="flex items-center gap-2">
+                      <span>🏗️</span>
+                      يشمل بلاطة خرسانية
+                    </Label>
+                    <Switch
+                      id="includeSlab"
+                      checked={formData.includeSlab}
+                      onCheckedChange={(checked) => handleInputChange('includeSlab', checked)}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Roof Type */}
               <div className="space-y-2">
-                <Label>نوع السقف</Label>
+                <Label className="flex items-center gap-2">
+                  <span>🏠</span>
+                  نوع السقف
+                </Label>
                 <Select value={formData.roofType} onValueChange={(value) => handleInputChange('roofType', value)}>
                   <SelectTrigger className="input-arabic">
                     <SelectValue />
@@ -325,7 +431,10 @@ const Calculator = () => {
               {/* Optional Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="rooms">عدد الغرف (اختياري)</Label>
+                  <Label htmlFor="rooms" className="flex items-center gap-2">
+                    <span>🚪</span>
+                    عدد الغرف (اختياري)
+                  </Label>
                   <Input
                     id="rooms"
                     type="number"
@@ -336,7 +445,10 @@ const Calculator = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bathrooms">عدد الحمامات (اختياري)</Label>
+                  <Label htmlFor="bathrooms" className="flex items-center gap-2">
+                    <span>🚿</span>
+                    عدد الحمامات (اختياري)
+                  </Label>
                   <Input
                     id="bathrooms"
                     type="number"
@@ -349,23 +461,54 @@ const Calculator = () => {
               </div>
 
               {/* Calculate Button */}
-              <Button
-                onClick={handleCalculate}
-                disabled={isCalculating}
-                className="w-full btn-construction text-lg py-6"
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                {isCalculating ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
-                    جاري الحساب...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <CalculatorIcon className="h-5 w-5" />
-                    احسب المواد والتكلفة
-                  </div>
-                )}
-              </Button>
+                <Button
+                  onClick={handleCalculate}
+                  disabled={isCalculating}
+                  className="w-full btn-construction text-lg py-6"
+                >
+                  {isCalculating ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground"></div>
+                      <span>🧮</span>
+                      جاري الحساب...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <CalculatorIcon className="h-5 w-5" />
+                      <span>🚀</span>
+                      احسب المواد والتكلفة
+                    </div>
+                  )}
+                </Button>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Tips Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <Card className="card-construction bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">💡</div>
+                <div>
+                  <h3 className="font-bold mb-2">نصائح مهمة للحساب الدقيق:</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• تأكد من دقة القياسات قبل البدء</li>
+                    <li>• احرص على إضافة نسبة احتياطي للهدر</li>
+                    <li>• راجع الأسعار مع الموردين المحليين</li>
+                    <li>• استشر مهندس إنشائي للمشاريع الكبيرة</li>
+                  </ul>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
