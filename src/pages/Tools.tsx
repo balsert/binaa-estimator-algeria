@@ -3,6 +3,10 @@ import { ArrowLeft, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import MaterialCalculator from "@/components/MaterialCalculator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ConstructionSteps from "@/components/ConstructionSteps";
+import MaterialGallery from "@/components/MaterialGallery";
+import BackupRestore from "@/components/BackupRestore";
 
 const Tools = () => {
   const navigate = useNavigate();
@@ -35,7 +39,30 @@ const Tools = () => {
       </motion.header>
 
       <div className="container mx-auto px-4 py-8">
-        <MaterialCalculator />
+        <Tabs defaultValue="calculator" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="calculator">الحاسبات</TabsTrigger>
+            <TabsTrigger value="steps">خطوات البناء</TabsTrigger>
+            <TabsTrigger value="gallery">معرض المواد</TabsTrigger>
+            <TabsTrigger value="backup">النسخ الاحتياطي</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="calculator">
+            <MaterialCalculator />
+          </TabsContent>
+          
+          <TabsContent value="steps">
+            <ConstructionSteps />
+          </TabsContent>
+          
+          <TabsContent value="gallery">
+            <MaterialGallery />
+          </TabsContent>
+          
+          <TabsContent value="backup">
+            <BackupRestore />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

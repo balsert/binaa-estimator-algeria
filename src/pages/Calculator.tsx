@@ -489,6 +489,17 @@ const Calculator = () => {
           </Card>
         </motion.div>
 
+        {/* Construction Visuals */}
+        {formData.length && formData.width && (
+          <ConstructionVisuals
+            length={parseFloat(formData.length)}
+            width={parseFloat(formData.width)}
+            floors={parseInt(formData.floors)}
+            rooms={formData.rooms ? parseInt(formData.rooms) : undefined}
+            bathrooms={formData.bathrooms ? parseInt(formData.bathrooms) : undefined}
+          />
+        )}
+
         {/* Tips Card */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
