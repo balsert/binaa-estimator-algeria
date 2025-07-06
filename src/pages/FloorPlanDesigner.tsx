@@ -10,6 +10,7 @@ import { PropertiesPanel } from '@/components/FloorPlanDesigner/PropertiesPanel'
 import { LayerManager } from '@/components/FloorPlanDesigner/LayerManager';
 import { MiniMap } from '@/components/FloorPlanDesigner/MiniMap';
 import { ValidationPanel } from '@/components/FloorPlanDesigner/ValidationPanel';
+import { AutoGenerationPanel } from '@/components/FloorPlanDesigner/AutoGenerationPanel';
 import { useFloorPlanStore } from '@/stores/floorPlanStore';
 import { FloorPlan, Point, Wall, Door, Window, Room, Furniture } from '@/types/floorPlan';
 import { useToast } from '@/hooks/use-toast';
@@ -339,6 +340,15 @@ const FloorPlanDesigner = () => {
         {/* Left Sidebar */}
         <div className="w-80 bg-white border-r flex flex-col overflow-y-auto">
           <div className="p-4 space-y-4">
+            <AutoGenerationPanel 
+              onGenerate={() => {
+                toast({
+                  title: "تم إنشاء المخطط",
+                  description: "تم إنشاء مخطط المنزل بنجاح",
+                });
+              }}
+            />
+            
             <ToolBar
               selectedTool={selectedTool}
               onToolSelect={setSelectedTool}
@@ -399,9 +409,9 @@ const FloorPlanDesigner = () => {
             <PropertiesPanel
               selectedElement={selectedElement}
               elementType={selectedElementType}
-              onElementUpdate={updateElement}
-              onElementDelete={deleteElement}
-              onElementDuplicate={duplicateElement}
+              onElementUpdate={(elementId, updates) => updateElement(elementId, selectedElementType, updates)}
+              onElementDelete={(elementId) => deleteElement(elementId, selectedElementType)}
+              onElementDuplicate={(elementId) => duplicateElement(elementId, selectedElementType)}
             />
             
             <ValidationPanel floorPlan={floorPlan} />

@@ -45,6 +45,11 @@ export interface Room {
   area: number;
   color: string;
   furniture: Furniture[];
+  position?: Point;
+  dimensions?: Dimensions;
+  rotation?: number;
+  doors?: string[];
+  windows?: string[];
 }
 
 export interface Furniture {
@@ -95,6 +100,32 @@ export type RoomType =
   | 'balcony'
   | 'garage'
   | 'utility';
+
+export interface RoomTemplate {
+  type: RoomType;
+  name: string;
+  icon: string;
+  color: string;
+  minDimensions: Dimensions;
+  defaultDimensions: Dimensions;
+}
+
+export interface Floor {
+  id: string;
+  level: number;
+  rooms: Room[];
+  stairs?: Point;
+}
+
+export interface FloorPlanState {
+  floorPlan: FloorPlan | null;
+  selectedRoom: string | null;
+  zoom: number;
+  offset: Point;
+  isEditing: boolean;
+  history: FloorPlan[];
+  historyIndex: number;
+}
 
 export type FurnitureType =
   | 'bed'

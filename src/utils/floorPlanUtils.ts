@@ -1,5 +1,7 @@
 import { Room, RoomType, RoomTemplate, Dimensions, Point, FloorPlan, Floor } from '@/types/floorPlan';
 
+export type { RoomType } from '@/types/floorPlan';
+
 export const ROOM_TEMPLATES: Record<RoomType, RoomTemplate> = {
   bedroom: {
     type: 'bedroom',
@@ -80,6 +82,14 @@ export const ROOM_TEMPLATES: Record<RoomType, RoomTemplate> = {
     color: '#ECEFF1',
     minDimensions: { width: 3, height: 5 },
     defaultDimensions: { width: 4, height: 6 }
+  },
+  utility: {
+    type: 'utility',
+    name: 'غرفة مرافق',
+    icon: '🔧',
+    color: '#F5F5F5',
+    minDimensions: { width: 1.5, height: 2 },
+    defaultDimensions: { width: 2, height: 2.5 }
   }
 };
 
@@ -90,28 +100,30 @@ export const MAX_ROOMS_PER_FLOOR = 20;
 
 export function createNewFloorPlan(
   name: string,
-  propertyDimensions: Dimensions,
-  numberOfFloors: number
+  dimensions: Dimensions
 ): FloorPlan {
-  const floors: Floor[] = [];
-  
-  for (let i = 0; i < numberOfFloors; i++) {
-    floors.push({
-      id: `floor-${i + 1}`,
-      level: i + 1,
-      rooms: [],
-      stairs: i > 0 ? { x: 1, y: 1 } : undefined
-    });
-  }
-
   return {
     id: `fp-${Date.now()}`,
     name,
-    propertyDimensions,
-    floors,
-    currentFloor: 0,
+    dimensions,
+    scale: 1,
+    units: 'metric',
     gridSize: GRID_SIZE,
-    wallThickness: WALL_THICKNESS,
+    walls: [],
+    doors: [],
+    windows: [],
+    rooms: [],
+    furniture: [],
+    layers: [
+      {
+        id: 'walls',
+        name: 'الجدران',
+        visible: true,
+        locked: false,
+        opacity: 1,
+        elements: []
+      }
+    ],
     createdAt: new Date(),
     updatedAt: new Date()
   };
@@ -125,14 +137,19 @@ export function createRoom(
   const template = ROOM_TEMPLATES[type];
   const dimensions = customDimensions || template.defaultDimensions;
 
+  const area = dimensions.width * dimensions.height;
+  
   return {
     id: `room-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: template.name,
     type,
+    walls: [],
+    area,
+    color: template.color,
+    furniture: [],
     position,
     dimensions,
     rotation: 0,
-    color: template.color,
     doors: [],
     windows: []
   };
@@ -150,11 +167,10 @@ export function snapPointToGrid(point: Point, gridSize: number = GRID_SIZE): Poi
 }
 
 export function calculateRoomArea(room: Room): number {
-  return room.dimensions.width * room.dimensions.height;
-}
-
-export function calculateTotalFloorArea(floor: Floor): number {
-  return floor.rooms.reduce((total, room) => total + calculateRoomArea(room), 0);
+  if (room.dimensions) {
+    return room.dimensions.width * room.dimensions.height;
+  }
+  return room.area;
 }
 
 export function validateRoomPlacement(
@@ -163,6 +179,11 @@ export function validateRoomPlacement(
   propertyDimensions: Dimensions
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
+
+  if (!room.dimensions || !room.position) {
+    errors.push('الغرفة تحتاج لأبعاد وموقع محددين');
+    return { isValid: false, errors };
+  }
 
   // Check minimum size
   if (room.dimensions.width < MIN_ROOM_SIZE || room.dimensions.height < MIN_ROOM_SIZE) {
@@ -196,6 +217,10 @@ export function validateRoomPlacement(
 }
 
 export function roomsOverlap(room1: Room, room2: Room): boolean {
+  if (!room1.position || !room1.dimensions || !room2.position || !room2.dimensions) {
+    return false;
+  }
+
   const r1 = {
     left: room1.position.x,
     right: room1.position.x + room1.dimensions.width,
@@ -230,6 +255,8 @@ export function optimizeRoomArrangement(rooms: Room[], propertyDimensions: Dimen
   let rowHeight = 0;
 
   for (const room of sortedRooms) {
+    if (!room.dimensions) continue;
+    
     // Check if room fits in current row
     if (currentX + room.dimensions.width + WALL_THICKNESS > propertyDimensions.width) {
       // Move to next row
