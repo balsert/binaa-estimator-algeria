@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import About from "./pages/About";
 import Analytics from "./pages/Analytics";
 import Tools from "./pages/Tools";
+import FloorPlanDesigner from "./pages/FloorPlanDesigner";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import Layout from "./components/Layout";
@@ -22,7 +23,8 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
-  const showBottomNav = !location.pathname.includes('/project/');
+  const showBottomNav = !location.pathname.includes('/project/') && 
+                       !location.pathname.includes('/floor-plan-designer');
 
   return (
     <ErrorBoundary>
@@ -38,6 +40,7 @@ const AppContent = () => {
               <Route path="/settings" element={<Settings />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/tools" element={<Tools />} />
+              <Route path="/floor-plan-designer" element={<FloorPlanDesigner />} />
               <Route path="/about" element={<About />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calculator, FolderOpen, Settings, Info, Plus, BarChart3, Wrench } from "lucide-react";
+import { Calculator, FolderOpen, Settings, Info, Plus, BarChart3, Wrench, Home as HomeIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -38,6 +38,14 @@ const Home = () => {
       to: "/calculator",
       color: "btn-construction",
       image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=100&h=60&fit=crop"
+    },
+    {
+      title: "مصمم المخططات",
+      description: "تصميم مخططات معمارية تفاعلية",
+      icon: HomeIcon,
+      to: "/floor-plan-designer",
+      color: "bg-purple-500 text-white hover:bg-purple-600",
+      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=60&fit=crop"
     },
     {
       title: "مشاريعي",
