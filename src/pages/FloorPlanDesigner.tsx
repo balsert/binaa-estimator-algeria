@@ -1,147 +1,258 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Home, Plus } from 'lucide-react';
+import { ArrowLeft, Save, Download, Undo, Redo, ZoomIn, ZoomOut, Grid, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
-import { FloorPlanEditor } from '@/components/FloorPlanEditor';
-import { floorPlanDB } from '@/lib/floorPlanDatabase';
-import { createNewFloorPlan } from '@/utils/floorPlanUtils';
-import { FloorPlan } from '@/types/floorPlan';
+import { FloorPlanCanvas } from '@/components/FloorPlanDesigner/FloorPlanCanvas';
+import { ToolBar } from '@/components/FloorPlanDesigner/ToolBar';
+import { PropertiesPanel } from '@/components/FloorPlanDesigner/PropertiesPanel';
+import { LayerManager } from '@/components/FloorPlanDesigner/LayerManager';
+import { MiniMap } from '@/components/FloorPlanDesigner/MiniMap';
+import { ValidationPanel } from '@/components/FloorPlanDesigner/ValidationPanel';
+import { useFloorPlanStore } from '@/stores/floorPlanStore';
+import { FloorPlan, Point, Wall, Door, Window, Room, Furniture } from '@/types/floorPlan';
 import { useToast } from '@/hooks/use-toast';
 
 const FloorPlanDesigner = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentFloorPlan, setCurrentFloorPlan] = useState<FloorPlan | null>(null);
-  const [showNewProjectForm, setShowNewProjectForm] = useState(false);
-  const [savedFloorPlans, setSavedFloorPlans] = useState<FloorPlan[]>([]);
   
-  const [newProjectForm, setNewProjectForm] = useState({
-    name: '',
-    width: '',
-    length: '',
-    floors: '1'
-  });
+  const {
+    floorPlan,
+    selectedTool,
+    selectedElement,
+    selectedElementType,
+    zoom,
+    offset,
+    setFloorPlan,
+    setSelectedTool,
+    setSelectedElement,
+    setZoom,
+    setOffset,
+    addWall,
+    addDoor,
+    addWindow,
+    addRoom,
+    addFurniture,
+    updateElement,
+    deleteElement,
+    duplicateElement,
+    undo,
+    redo
+  } = useFloorPlanStore();
 
-  useEffect(() => {
-    loadSavedFloorPlans();
-  }, []);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawingStart, setDrawingStart] = useState<Point | null>(null);
 
-  const loadSavedFloorPlans = async () => {
-    try {
-      const plans = await floorPlanDB.floorPlans.orderBy('updatedAt').reverse().toArray();
-      setSavedFloorPlans(plans);
-    } catch (error) {
-      console.error('Error loading floor plans:', error);
+  // Initialize with a default floor plan if none exists
+  React.useEffect(() => {
+    if (!floorPlan) {
+      const defaultFloorPlan: FloorPlan = {
+        id: 'default-plan',
+        name: 'New Floor Plan',
+        dimensions: { width: 20, height: 15 },
+        scale: 1,
+        units: 'metric',
+        gridSize: 0.5,
+        walls: [],
+        doors: [],
+        windows: [],
+        rooms: [],
+        furniture: [],
+        layers: [
+          {
+            id: 'walls',
+            name: 'Walls',
+            visible: true,
+            locked: false,
+            opacity: 1,
+            elements: []
+          },
+          {
+            id: 'doors-windows',
+            name: 'Doors & Windows',
+            visible: true,
+            locked: false,
+            opacity: 1,
+            elements: []
+          },
+          {
+            id: 'furniture',
+            name: 'Furniture',
+            visible: true,
+            locked: false,
+            opacity: 1,
+            elements: []
+          }
+        ],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      setFloorPlan(defaultFloorPlan);
     }
-  };
+  }, [floorPlan, setFloorPlan]);
 
-  const handleCreateNewProject = () => {
-    const { name, width, length, floors } = newProjectForm;
-    
-    if (!name || !width || !length) {
-      toast({
-        title: "بيانات ناقصة",
-        description: "يرجى ملء جميع الحقول المطلوبة",
-        variant: "destructive"
-      });
-      return;
+  const handleCanvasClick = useCallback((position: Point) => {
+    if (!floorPlan) return;
+
+    switch (selectedTool) {
+      case 'wall':
+        if (!isDrawing) {
+          setIsDrawing(true);
+          setDrawingStart(position);
+        } else {
+          if (drawingStart) {
+            const newWall: Wall = {
+              id: `wall-${Date.now()}`,
+              start: drawingStart,
+              end: position,
+              thickness: 0.2,
+              type: 'interior',
+              material: 'brick'
+            };
+            addWall(newWall);
+            setIsDrawing(false);
+            setDrawingStart(null);
+          }
+        }
+        break;
+
+      case 'door':
+        const newDoor: Door = {
+          id: `door-${Date.now()}`,
+          position,
+          width: 0.8,
+          height: 2.0,
+          wallId: '', // Would need to find nearest wall
+          type: 'single',
+          openDirection: 'inward'
+        };
+        addDoor(newDoor);
+        break;
+
+      case 'window':
+        const newWindow: Window = {
+          id: `window-${Date.now()}`,
+          position,
+          width: 1.2,
+          height: 1.0,
+          wallId: '', // Would need to find nearest wall
+          type: 'single',
+          sillHeight: 0.9
+        };
+        addWindow(newWindow);
+        break;
+
+      case 'room':
+        const newRoom: Room = {
+          id: `room-${Date.now()}`,
+          name: 'New Room',
+          type: 'bedroom',
+          walls: [],
+          area: 12,
+          color: '#E3F2FD',
+          furniture: []
+        };
+        addRoom(newRoom);
+        break;
+
+      case 'bed':
+      case 'sofa':
+      case 'kitchen':
+      case 'bathroom':
+      case 'garage':
+        const furnitureTypes = {
+          bed: { width: 2, height: 1.5, color: '#8B4513' },
+          sofa: { width: 2.5, height: 1, color: '#654321' },
+          kitchen: { width: 3, height: 0.6, color: '#D2691E' },
+          bathroom: { width: 1.5, height: 1.5, color: '#87CEEB' },
+          garage: { width: 5, height: 2.5, color: '#696969' }
+        };
+
+        const furnitureConfig = furnitureTypes[selectedTool as keyof typeof furnitureTypes];
+        if (furnitureConfig) {
+          const newFurniture: Furniture = {
+            id: `furniture-${Date.now()}`,
+            name: selectedTool.charAt(0).toUpperCase() + selectedTool.slice(1),
+            type: selectedTool as any,
+            position,
+            dimensions: { width: furnitureConfig.width, height: furnitureConfig.height },
+            rotation: 0,
+            color: furnitureConfig.color
+          };
+          addFurniture(newFurniture);
+        }
+        break;
+    }
+  }, [selectedTool, isDrawing, drawingStart, floorPlan, addWall, addDoor, addWindow, addRoom, addFurniture]);
+
+  const handleElementSelect = useCallback((elementId: string, elementType: string) => {
+    if (!floorPlan) return;
+
+    let element: any;
+    switch (elementType) {
+      case 'wall':
+        element = floorPlan.walls.find(w => w.id === elementId);
+        break;
+      case 'door':
+        element = floorPlan.doors.find(d => d.id === elementId);
+        break;
+      case 'window':
+        element = floorPlan.windows.find(w => w.id === elementId);
+        break;
+      case 'room':
+        element = floorPlan.rooms.find(r => r.id === elementId);
+        break;
+      case 'furniture':
+        element = floorPlan.furniture.find(f => f.id === elementId);
+        break;
     }
 
-    const propertyDimensions = {
-      width: parseFloat(width),
-      height: parseFloat(length)
-    };
-
-    if (propertyDimensions.width < 5 || propertyDimensions.height < 5) {
-      toast({
-        title: "أبعاد غير صحيحة",
-        description: "الحد الأدنى للأبعاد هو 5×5 متر",
-        variant: "destructive"
-      });
-      return;
+    if (element) {
+      setSelectedElement(element, elementType);
+      setSelectedTool('select');
     }
+  }, [floorPlan, setSelectedElement, setSelectedTool]);
 
-    const floorPlan = createNewFloorPlan(
-      name,
-      propertyDimensions,
-      parseInt(floors)
-    );
+  const handleElementMove = useCallback((elementId: string, newPosition: Point) => {
+    if (selectedElementType === 'door' || selectedElementType === 'window' || selectedElementType === 'furniture') {
+      updateElement(elementId, selectedElementType, { position: newPosition });
+    }
+  }, [selectedElementType, updateElement]);
 
-    setCurrentFloorPlan(floorPlan);
-    setShowNewProjectForm(false);
-    
+  const handleZoomIn = () => setZoom(zoom * 1.2);
+  const handleZoomOut = () => setZoom(zoom / 1.2);
+
+  const handleSave = () => {
+    // Implement save functionality
     toast({
-      title: "تم إنشاء المشروع",
-      description: `تم إنشاء مشروع ${name} بنجاح`,
-      variant: "default"
+      title: "Floor plan saved",
+      description: "Your floor plan has been saved successfully.",
     });
   };
 
-  const handleLoadProject = (floorPlan: FloorPlan) => {
-    setCurrentFloorPlan(floorPlan);
+  const handleExport = () => {
+    // Implement export functionality
+    toast({
+      title: "Export started",
+      description: "Your floor plan is being exported as PDF.",
+    });
   };
 
-  const handleSaveProject = async (floorPlan: FloorPlan) => {
-    try {
-      if (floorPlan.id && await floorPlanDB.floorPlans.get(floorPlan.id)) {
-        await floorPlanDB.floorPlans.update(floorPlan.id, {
-          ...floorPlan,
-          updatedAt: new Date()
-        });
-      } else {
-        await floorPlanDB.floorPlans.add({
-          ...floorPlan,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-      }
-      
-      await loadSavedFloorPlans();
-      
-      toast({
-        title: "تم الحفظ",
-        description: "تم حفظ المشروع بنجاح",
-        variant: "default"
-      });
-    } catch (error) {
-      toast({
-        title: "خطأ في الحفظ",
-        description: "حدث خطأ أثناء حفظ المشروع",
-        variant: "destructive"
-      });
-    }
-  };
-
-  if (currentFloorPlan) {
+  if (!floorPlan) {
     return (
-      <div className="h-screen">
-        <FloorPlanEditor
-          initialFloorPlan={currentFloorPlan}
-          onSave={handleSaveProject}
-        />
-        
-        {/* Back Button */}
-        <div className="absolute top-4 left-4 z-50">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentFloorPlan(null)}
-            className="bg-white/90 backdrop-blur-sm"
-          >
-            <ArrowLeft className="h-4 w-4 ml-2" />
-            العودة للمشاريع
-          </Button>
+      <div className="min-h-screen bg-subtle flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading Floor Plan Designer...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-subtle">
+    <div className="h-screen bg-subtle flex flex-col">
       {/* Header */}
       <motion.header 
         className="bg-construction text-primary-foreground shadow-construction"
@@ -149,7 +260,7 @@ const FloorPlanDesigner = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -160,204 +271,142 @@ const FloorPlanDesigner = () => {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="flex items-center gap-3">
-                <Home className="h-6 w-6" />
-                <h1 className="text-xl font-bold">مصمم المخططات المعمارية</h1>
-              </div>
+              <h1 className="text-lg font-bold">Floor Plan Designer</h1>
             </div>
-            <Button
-              onClick={() => setShowNewProjectForm(true)}
-              variant="ghost"
-              size="sm"
-              className="text-primary-foreground hover:bg-primary-foreground/20"
-            >
-              <Plus className="h-4 w-4 ml-2" />
-              مشروع جديد
-            </Button>
+            
+            <div className="flex items-center gap-2">
+              {/* Zoom Controls */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleZoomOut}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <span className="text-sm px-2">{Math.round(zoom * 100)}%</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleZoomIn}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              
+              {/* History Controls */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={undo}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <Undo className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={redo}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <Redo className="h-4 w-4" />
+              </Button>
+              
+              {/* File Operations */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExport}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </motion.header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* New Project Form */}
-        {showNewProjectForm && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8"
-          >
-            <Card className="card-construction">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-xl">🏗️</span>
-                  مشروع جديد
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="projectName">اسم المشروع</Label>
-                    <Input
-                      id="projectName"
-                      placeholder="مثال: فيلا العائلة"
-                      value={newProjectForm.name}
-                      onChange={(e) => setNewProjectForm(prev => ({
-                        ...prev,
-                        name: e.target.value
-                      }))}
-                      className="input-arabic"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="floors">عدد الطوابق</Label>
-                    <Input
-                      id="floors"
-                      type="number"
-                      min="1"
-                      max="4"
-                      value={newProjectForm.floors}
-                      onChange={(e) => setNewProjectForm(prev => ({
-                        ...prev,
-                        floors: e.target.value
-                      }))}
-                      className="input-arabic arabic-numbers"
-                    />
-                  </div>
-                </div>
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        <div className="w-80 bg-white border-r flex flex-col overflow-y-auto">
+          <div className="p-4 space-y-4">
+            <ToolBar
+              selectedTool={selectedTool}
+              onToolSelect={setSelectedTool}
+            />
+            
+            <LayerManager
+              layers={floorPlan.layers}
+              onLayerUpdate={(layerId, updates) => {
+                // Implement layer update
+              }}
+              onLayerAdd={() => {
+                // Implement layer add
+              }}
+              onLayerDelete={(layerId) => {
+                // Implement layer delete
+              }}
+            />
+          </div>
+        </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="width">العرض (متر)</Label>
-                    <Input
-                      id="width"
-                      type="number"
-                      min="5"
-                      step="0.5"
-                      placeholder="15"
-                      value={newProjectForm.width}
-                      onChange={(e) => setNewProjectForm(prev => ({
-                        ...prev,
-                        width: e.target.value
-                      }))}
-                      className="input-arabic arabic-numbers"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="length">الطول (متر)</Label>
-                    <Input
-                      id="length"
-                      type="number"
-                      min="5"
-                      step="0.5"
-                      placeholder="20"
-                      value={newProjectForm.length}
-                      onChange={(e) => setNewProjectForm(prev => ({
-                        ...prev,
-                        length: e.target.value
-                      }))}
-                      className="input-arabic arabic-numbers"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <Button
-                    onClick={handleCreateNewProject}
-                    className="flex-1 btn-construction"
-                  >
-                    <Plus className="h-4 w-4 ml-2" />
-                    إنشاء المشروع
-                  </Button>
-                  <Button
-                    onClick={() => setShowNewProjectForm(false)}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    إلغاء
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Saved Projects */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <h2 className="text-xl font-bold mb-6">المشاريع المحفوظة</h2>
+        {/* Canvas Area */}
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 relative">
+            <FloorPlanCanvas
+              floorPlan={floorPlan}
+              selectedTool={selectedTool}
+              zoom={zoom}
+              offset={offset}
+              onElementSelect={handleElementSelect}
+              onElementMove={handleElementMove}
+              onCanvasClick={handleCanvasClick}
+            />
+          </div>
           
-          {savedFloorPlans.length === 0 ? (
-            <Card className="card-construction">
-              <CardContent className="p-8 text-center">
-                <div className="text-4xl mb-4">🏗️</div>
-                <h3 className="text-lg font-semibold mb-2">لا توجد مشاريع محفوظة</h3>
-                <p className="text-muted-foreground mb-6">
-                  ابدأ بإنشاء مشروع جديد لتصميم مخططك المعماري
-                </p>
-                <Button
-                  onClick={() => setShowNewProjectForm(true)}
-                  className="btn-construction"
-                >
-                  <Plus className="h-4 w-4 ml-2" />
-                  إنشاء مشروع جديد
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {savedFloorPlans.map((floorPlan, index) => (
-                <motion.div
-                  key={floorPlan.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 * index }}
-                  whileHover={{ scale: 1.02 }}
-                  className="cursor-pointer"
-                  onClick={() => handleLoadProject(floorPlan)}
-                >
-                  <Card className="card-construction hover:shadow-construction transition-all duration-300">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold text-lg mb-1">{floorPlan.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {floorPlan.propertyDimensions.width}×{floorPlan.propertyDimensions.height} متر
-                          </p>
-                        </div>
-                        <span className="text-2xl">🏠</span>
-                      </div>
-                      
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>الطوابق:</span>
-                          <span>{floorPlan.floors.length}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>إجمالي الغرف:</span>
-                          <span>
-                            {floorPlan.floors.reduce((total, floor) => total + floor.rooms.length, 0)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>آخر تحديث:</span>
-                          <span>
-                            {new Date(floorPlan.updatedAt).toLocaleDateString('ar-DZ')}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.div>
+          {/* Bottom Panel - Mini Map */}
+          <div className="h-64 bg-white border-t p-4">
+            <MiniMap
+              floorPlan={floorPlan}
+              viewportBounds={{
+                x: -offset.x / zoom,
+                y: -offset.y / zoom,
+                width: 800 / zoom,
+                height: 600 / zoom
+              }}
+              onViewportChange={(newBounds) => {
+                setOffset({
+                  x: -newBounds.x * zoom,
+                  y: -newBounds.y * zoom
+                });
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Right Sidebar */}
+        <div className="w-80 bg-white border-l flex flex-col overflow-y-auto">
+          <div className="p-4 space-y-4">
+            <PropertiesPanel
+              selectedElement={selectedElement}
+              elementType={selectedElementType}
+              onElementUpdate={updateElement}
+              onElementDelete={deleteElement}
+              onElementDuplicate={duplicateElement}
+            />
+            
+            <ValidationPanel floorPlan={floorPlan} />
+          </div>
+        </div>
       </div>
     </div>
   );

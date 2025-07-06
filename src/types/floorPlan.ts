@@ -8,51 +8,79 @@ export interface Dimensions {
   height: number;
 }
 
-export interface Room {
+export interface Wall {
   id: string;
-  name: string;
-  type: RoomType;
-  position: Point;
-  dimensions: Dimensions;
-  rotation: number;
-  color: string;
-  doors: Door[];
-  windows: Window[];
-  isSelected?: boolean;
+  start: Point;
+  end: Point;
+  thickness: number;
+  type: 'exterior' | 'interior' | 'load-bearing';
+  material: string;
 }
 
 export interface Door {
   id: string;
   position: Point;
   width: number;
-  wall: 'north' | 'south' | 'east' | 'west';
-  isOpen?: boolean;
+  height: number;
+  wallId: string;
+  type: 'single' | 'double' | 'sliding' | 'french';
+  openDirection: 'left' | 'right' | 'inward' | 'outward';
 }
 
 export interface Window {
   id: string;
   position: Point;
   width: number;
-  wall: 'north' | 'south' | 'east' | 'west';
+  height: number;
+  wallId: string;
+  type: 'single' | 'double' | 'bay' | 'casement';
+  sillHeight: number;
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  type: RoomType;
+  walls: string[];
+  area: number;
+  color: string;
+  furniture: Furniture[];
+}
+
+export interface Furniture {
+  id: string;
+  name: string;
+  type: FurnitureType;
+  position: Point;
+  dimensions: Dimensions;
+  rotation: number;
+  color: string;
 }
 
 export interface FloorPlan {
   id: string;
   name: string;
-  propertyDimensions: Dimensions;
-  floors: Floor[];
-  currentFloor: number;
+  dimensions: Dimensions;
+  scale: number;
+  units: 'metric' | 'imperial';
   gridSize: number;
-  wallThickness: number;
+  walls: Wall[];
+  doors: Door[];
+  windows: Window[];
+  rooms: Room[];
+  furniture: Furniture[];
+  layers: Layer[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface Floor {
+export interface Layer {
   id: string;
-  level: number;
-  rooms: Room[];
-  stairs?: Point;
+  name: string;
+  visible: boolean;
+  locked: boolean;
+  opacity: number;
+  elements: string[];
 }
 
 export type RoomType = 
@@ -65,23 +93,45 @@ export type RoomType =
   | 'storage'
   | 'hallway'
   | 'balcony'
-  | 'garage';
+  | 'garage'
+  | 'utility';
 
-export interface FloorPlanState {
-  floorPlan: FloorPlan | null;
-  selectedRoom: string | null;
-  zoom: number;
-  offset: Point;
-  isEditing: boolean;
-  history: FloorPlan[];
-  historyIndex: number;
-}
+export type FurnitureType =
+  | 'bed'
+  | 'sofa'
+  | 'table'
+  | 'chair'
+  | 'cabinet'
+  | 'appliance'
+  | 'fixture';
 
-export interface RoomTemplate {
-  type: RoomType;
+export interface DesignTool {
+  id: string;
   name: string;
   icon: string;
-  color: string;
-  minDimensions: Dimensions;
-  defaultDimensions: Dimensions;
+  cursor: string;
+  active: boolean;
+}
+
+export interface ValidationRule {
+  id: string;
+  name: string;
+  description: string;
+  validate: (floorPlan: FloorPlan) => ValidationResult;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface HistoryAction {
+  id: string;
+  type: 'add' | 'remove' | 'modify' | 'move';
+  elementType: 'wall' | 'door' | 'window' | 'room' | 'furniture';
+  elementId: string;
+  previousState?: any;
+  newState?: any;
+  timestamp: Date;
 }
