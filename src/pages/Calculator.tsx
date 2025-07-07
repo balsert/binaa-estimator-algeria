@@ -145,17 +145,8 @@ const Calculator = () => {
         variant: "default"
       });
 
-      // Navigate to Floor Plan Designer with project data
-      const projectData = {
-        id: projectId,
-        length: inputData.length,
-        width: inputData.width,
-        floors: inputData.floors,
-        rooms: inputData.rooms || 3,
-        bathrooms: inputData.bathrooms || 2,
-        style: selectedBuildingType
-      };
-      navigate(`/floor-plan-designer?project=${encodeURIComponent(JSON.stringify(projectData))}`);
+      // Navigate to results
+      navigate(`/project/${projectId}`);
 
     } catch (error) {
       console.error('خطأ في الحساب:', error);

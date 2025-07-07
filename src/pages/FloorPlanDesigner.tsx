@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Download, Undo, Redo, ZoomIn, ZoomOut, Grid, Ruler } from 'lucide-react';
+import { ArrowLeft, Save, Download, Undo, Redo, ZoomIn, ZoomOut, Grid, Ruler, Home, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,7 @@ import { useFloorPlanStore } from '@/stores/floorPlanStore';
 import { FloorPlan, Point, Wall, Door, Window, Room, Furniture } from '@/types/floorPlan';
 import { generateProfessionalFloorPlan, GenerationOptions } from '@/utils/automaticFloorPlanGenerator';
 import { useToast } from '@/hooks/use-toast';
+import { db, Project } from '@/lib/database';
 
 const FloorPlanDesigner = () => {
   const navigate = useNavigate();
@@ -46,90 +47,53 @@ const FloorPlanDesigner = () => {
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingStart, setDrawingStart] = useState<Point | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showProjectList, setShowProjectList] = useState(true);
 
-  // Initialize with project data from URL or default floor plan
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const projectParam = urlParams.get('project');
-    
-    if (projectParam && !floorPlan) {
+  // Load all projects
+  useEffect(() => {
+    const loadProjects = async () => {
       try {
-        const projectData = JSON.parse(decodeURIComponent(projectParam));
-        
-        // Generate professional floor plan automatically
-        const generatedPlan = generateProfessionalFloorPlan({
-          dimensions: { width: projectData.width, height: projectData.length },
-          bedrooms: Math.max(1, Math.floor(projectData.rooms / 2)),
-          bathrooms: projectData.bathrooms || 1,
-          includeKitchen: true,
-          includeLiving: true,
-          includeDining: projectData.rooms >= 4,
-          includeOffice: projectData.rooms >= 5,
-          includeStorage: true,
-          style: projectData.style === 'villa' ? 'villa' : 
-                projectData.style === 'apartment' ? 'apartment' : 'modern'
-        });
-        
-        // Update floor plan name with project info
-        generatedPlan.name = `مخطط ${projectData.width}×${projectData.length} متر`;
-        generatedPlan.id = `fp-${projectData.id}`;
-        
-        setFloorPlan(generatedPlan);
-        
-        toast({
-          title: "تم إنشاء المخطط المعماري",
-          description: `تم إنشاء مخطط احترافي للمنزل ${projectData.width}×${projectData.length} متر`,
-        });
-        
+        const allProjects = await db.projects.toArray();
+        setProjects(allProjects);
       } catch (error) {
-        console.error('خطأ في تحليل بيانات المشروع:', error);
+        console.error('خطأ في تحميل المشاريع:', error);
       }
-    } else if (!floorPlan) {
-      // Default floor plan if no project data
-      const defaultFloorPlan: FloorPlan = {
-        id: 'default-plan',
-        name: 'مخطط جديد',
-        dimensions: { width: 20, height: 15 },
-        scale: 1,
-        units: 'metric',
-        gridSize: 0.5,
-        walls: [],
-        doors: [],
-        windows: [],
-        rooms: [],
-        furniture: [],
-        layers: [
-          {
-            id: 'walls',
-            name: 'الجدران',
-            visible: true,
-            locked: false,
-            opacity: 1,
-            elements: []
-          },
-          {
-            id: 'doors-windows',
-            name: 'الأبواب والنوافذ',
-            visible: true,
-            locked: false,
-            opacity: 1,
-            elements: []
-          },
-          {
-            id: 'furniture',
-            name: 'الأثاث',
-            visible: true,
-            locked: false,
-            opacity: 1,
-            elements: []
-          }
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      setFloorPlan(defaultFloorPlan);
-    }
-  }, [floorPlan, setFloorPlan, toast]);
+    };
+    
+    loadProjects();
+  }, []);
+
+  // Generate floor plan for selected project
+  const handleProjectSelect = (project: Project) => {
+    setSelectedProject(project);
+    setShowProjectList(false);
+    
+    // Generate professional floor plan automatically
+    const generatedPlan = generateProfessionalFloorPlan({
+      dimensions: { width: project.width, height: project.length },
+      bedrooms: Math.max(1, Math.floor((project.rooms || 3) / 2)),
+      bathrooms: project.bathrooms || 1,
+      includeKitchen: true,
+      includeLiving: true,
+      includeDining: (project.rooms || 3) >= 4,
+      includeOffice: (project.rooms || 3) >= 5,
+      includeStorage: true,
+      style: 'modern'
+    });
+    
+    // Update floor plan name with project info
+    generatedPlan.name = `مخطط ${project.name}`;
+    generatedPlan.id = `fp-${project.id}`;
+    
+    setFloorPlan(generatedPlan);
+    
+    toast({
+      title: "تم إنشاء المخطط المعماري",
+      description: `تم إنشاء مخطط احترافي للمشروع: ${project.name}`,
+    });
+  };
 
   const handleCanvasClick = useCallback((position: Point) => {
     if (!floorPlan) return;
@@ -278,12 +242,114 @@ const FloorPlanDesigner = () => {
     });
   };
 
+  // Show project list if no project selected
+  if (showProjectList) {
+    return (
+      <div className="min-h-screen bg-subtle">
+        {/* Header */}
+        <motion.header 
+          className="bg-construction text-primary-foreground shadow-construction"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/')}
+                className="text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-primary-foreground/20 rounded-full flex items-center justify-center">
+                  <Home className="h-6 w-6" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">مصمم المخططات المعمارية</h1>
+                  <p className="text-primary-foreground/80 text-sm">اختر مشروعاً لعرض مخططه المعماري</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.header>
+
+        {/* Projects List */}
+        <div className="container mx-auto px-4 py-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Card className="card-construction">
+              <CardHeader>
+                <CardTitle className="text-center flex items-center justify-center gap-2">
+                  <span className="text-xl">🏗️</span>
+                  اختر مشروعاً لعرض مخططه المعماري
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {projects.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-6xl mb-4">🏗️</div>
+                    <h3 className="text-lg font-semibold mb-2">لا توجد مشاريع</h3>
+                    <p className="text-muted-foreground mb-4">
+                      قم بإنشاء مشروع جديد أولاً من حاسبة مواد البناء
+                    </p>
+                    <Button onClick={() => navigate('/calculator')} className="btn-construction">
+                      <Plus className="h-4 w-4 ml-2" />
+                      إنشاء مشروع جديد
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {projects.map((project) => (
+                      <motion.div
+                        key={project.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="cursor-pointer"
+                        onClick={() => handleProjectSelect(project)}
+                      >
+                        <Card className="card-construction hover:border-primary/50 transition-all duration-300">
+                          <CardContent className="p-4">
+                            <div className="text-center">
+                              <div className="text-3xl mb-3">🏠</div>
+                              <h3 className="font-bold mb-2">{project.name}</h3>
+                              <div className="text-sm text-muted-foreground space-y-1">
+                                <p>📏 الأبعاد: {project.length}×{project.width} متر</p>
+                                <p>🏢 الطوابق: {project.floors}</p>
+                                {project.rooms && <p>🚪 الغرف: {project.rooms}</p>}
+                                {project.bathrooms && <p>🚿 الحمامات: {project.bathrooms}</p>}
+                              </div>
+                              <div className="mt-4 p-2 bg-primary/10 rounded-lg">
+                                <p className="text-xs text-primary font-semibold">
+                                  انقر لعرض المخطط المعماري
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   if (!floorPlan) {
     return (
       <div className="min-h-screen bg-subtle flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading Floor Plan Designer...</p>
+          <p className="text-muted-foreground">جاري إنشاء المخطط المعماري...</p>
         </div>
       </div>
     );
@@ -304,12 +370,14 @@ const FloorPlanDesigner = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/')}
+                onClick={() => setShowProjectList(true)}
                 className="text-primary-foreground hover:bg-primary-foreground/20"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <h1 className="text-lg font-bold">Floor Plan Designer</h1>
+              <h1 className="text-lg font-bold">
+                {selectedProject ? `مخطط ${selectedProject.name}` : 'مصمم المخططات'}
+              </h1>
             </div>
             
             <div className="flex items-center gap-2">
