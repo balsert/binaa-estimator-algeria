@@ -1,7 +1,7 @@
 import { FloorPlan, Wall, Door, Window, Room, Furniture, Point, Dimensions, RoomType } from '@/types/floorPlan';
 import { ROOM_TEMPLATES } from '@/utils/floorPlanUtils';
 
-interface GenerationOptions {
+export interface GenerationOptions {
   dimensions: Dimensions;
   bedrooms: number;
   bathrooms: number;

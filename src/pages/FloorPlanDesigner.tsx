@@ -13,6 +13,7 @@ import { ValidationPanel } from '@/components/FloorPlanDesigner/ValidationPanel'
 import { AutoGenerationPanel } from '@/components/FloorPlanDesigner/AutoGenerationPanel';
 import { useFloorPlanStore } from '@/stores/floorPlanStore';
 import { FloorPlan, Point, Wall, Door, Window, Room, Furniture } from '@/types/floorPlan';
+import { generateProfessionalFloorPlan, GenerationOptions } from '@/utils/automaticFloorPlanGenerator';
 import { useToast } from '@/hooks/use-toast';
 
 const FloorPlanDesigner = () => {
@@ -46,12 +47,48 @@ const FloorPlanDesigner = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingStart, setDrawingStart] = useState<Point | null>(null);
 
-  // Initialize with a default floor plan if none exists
+  // Initialize with project data from URL or default floor plan
   React.useEffect(() => {
-    if (!floorPlan) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectParam = urlParams.get('project');
+    
+    if (projectParam && !floorPlan) {
+      try {
+        const projectData = JSON.parse(decodeURIComponent(projectParam));
+        
+        // Generate professional floor plan automatically
+        const generatedPlan = generateProfessionalFloorPlan({
+          dimensions: { width: projectData.width, height: projectData.length },
+          bedrooms: Math.max(1, Math.floor(projectData.rooms / 2)),
+          bathrooms: projectData.bathrooms || 1,
+          includeKitchen: true,
+          includeLiving: true,
+          includeDining: projectData.rooms >= 4,
+          includeOffice: projectData.rooms >= 5,
+          includeStorage: true,
+          style: projectData.style === 'villa' ? 'villa' : 
+                projectData.style === 'apartment' ? 'apartment' : 'modern'
+        });
+        
+        // Update floor plan name with project info
+        generatedPlan.name = `مخطط ${projectData.width}×${projectData.length} متر`;
+        generatedPlan.id = `fp-${projectData.id}`;
+        
+        setFloorPlan(generatedPlan);
+        
+        toast({
+          title: "تم إنشاء المخطط المعماري",
+          description: `تم إنشاء مخطط احترافي للمنزل ${projectData.width}×${projectData.length} متر`,
+        });
+        
+      } catch (error) {
+        console.error('خطأ في تحليل بيانات المشروع:', error);
+      }
+    } else if (!floorPlan) {
+      // Default floor plan if no project data
       const defaultFloorPlan: FloorPlan = {
         id: 'default-plan',
-        name: 'New Floor Plan',
+        name: 'مخطط جديد',
         dimensions: { width: 20, height: 15 },
         scale: 1,
         units: 'metric',
@@ -64,7 +101,7 @@ const FloorPlanDesigner = () => {
         layers: [
           {
             id: 'walls',
-            name: 'Walls',
+            name: 'الجدران',
             visible: true,
             locked: false,
             opacity: 1,
@@ -72,7 +109,7 @@ const FloorPlanDesigner = () => {
           },
           {
             id: 'doors-windows',
-            name: 'Doors & Windows',
+            name: 'الأبواب والنوافذ',
             visible: true,
             locked: false,
             opacity: 1,
@@ -80,7 +117,7 @@ const FloorPlanDesigner = () => {
           },
           {
             id: 'furniture',
-            name: 'Furniture',
+            name: 'الأثاث',
             visible: true,
             locked: false,
             opacity: 1,
@@ -92,7 +129,7 @@ const FloorPlanDesigner = () => {
       };
       setFloorPlan(defaultFloorPlan);
     }
-  }, [floorPlan, setFloorPlan]);
+  }, [floorPlan, setFloorPlan, toast]);
 
   const handleCanvasClick = useCallback((position: Point) => {
     if (!floorPlan) return;
