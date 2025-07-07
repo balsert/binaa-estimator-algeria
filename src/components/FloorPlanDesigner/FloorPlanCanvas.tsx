@@ -3,6 +3,7 @@ import { Stage, Layer, Line, Rect, Circle, Text, Group } from 'react-konva';
 import Konva from 'konva';
 import { FloorPlan, Point, Wall, Door, Window, Room, Furniture } from '@/types/floorPlan';
 import { useFloorPlanStore } from '@/stores/floorPlanStore';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface FloorPlanCanvasProps {
   floorPlan: FloorPlan;
@@ -33,23 +34,45 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({
   const [stageSize, setStageSize] = useState({ width: 1200, height: 800 });
   const [showGrid, setShowGrid] = useState(true);
   const [showDimensions, setShowDimensions] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const updateSize = () => {
       const container = stageRef.current?.container();
       if (container) {
-        const rect = container.getBoundingClientRect();
-        setStageSize({
-          width: Math.min(rect.width, 2000),
-          height: Math.min(rect.height, 2000)
-        });
+        const parent = container.parentElement;
+        if (parent) {
+          const rect = parent.getBoundingClientRect();
+          // Adjust for mobile - take full available space
+          const availableWidth = rect.width - (isMobile ? 0 : 40); // No padding on mobile
+          const availableHeight = rect.height - (isMobile ? 0 : 40);
+          
+          setStageSize({
+            width: Math.max(availableWidth, 320), // Minimum width for mobile
+            height: Math.max(availableHeight, 400) // Minimum height for mobile
+          });
+        }
       }
     };
 
     updateSize();
+    
+    // More frequent updates for mobile responsive behavior
+    const resizeObserver = new ResizeObserver(updateSize);
+    const container = stageRef.current?.container();
+    if (container?.parentElement) {
+      resizeObserver.observe(container.parentElement);
+    }
+    
     window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
+    window.addEventListener('orientationchange', updateSize);
+    
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSize);
+      window.removeEventListener('orientationchange', updateSize);
+    };
+  }, [isMobile]);
 
   const renderGrid = useCallback(() => {
     if (!showGrid) return null;
@@ -334,22 +357,37 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({
   }, [offset, zoom, onCanvasClick]);
 
   return (
-    <div className="w-full h-full bg-white border rounded-lg overflow-hidden relative">
-      {/* Canvas Controls */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
+    <div className={`w-full h-full bg-white ${isMobile ? 'rounded-none' : 'border rounded-lg'} overflow-hidden relative`}>
+      {/* Canvas Controls - Adapted for mobile */}
+      <div className={`absolute ${isMobile ? 'top-2 right-2' : 'top-4 right-4'} z-10 flex gap-1`}>
         <button
           onClick={() => setShowGrid(!showGrid)}
-          className={`px-3 py-1 text-xs rounded ${showGrid ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          className={`${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs'} rounded transition-all ${
+            showGrid 
+              ? 'bg-primary text-primary-foreground shadow-lg' 
+              : 'bg-white/80 text-muted-foreground border hover:bg-white'
+          }`}
         >
-          Grid
+          {isMobile ? '⚏' : 'Grid'}
         </button>
         <button
           onClick={() => setShowDimensions(!showDimensions)}
-          className={`px-3 py-1 text-xs rounded ${showDimensions ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          className={`${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-xs'} rounded transition-all ${
+            showDimensions 
+              ? 'bg-primary text-primary-foreground shadow-lg' 
+              : 'bg-white/80 text-muted-foreground border hover:bg-white'
+          }`}
         >
-          Dimensions
+          {isMobile ? '📏' : 'Dimensions'}
         </button>
       </div>
+
+      {/* Mobile Touch Gestures Hint */}
+      {isMobile && (
+        <div className="absolute bottom-2 left-2 z-10 bg-black/50 text-white text-xs px-2 py-1 rounded">
+          📱 اسحب للتحريك • انقر مرتين للتكبير
+        </div>
+      )}
 
       <Stage
         ref={stageRef}
@@ -361,6 +399,7 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({
         y={offset.y}
         onClick={handleStageClick}
         onTap={handleStageClick}
+        draggable={isMobile} // Allow dragging on mobile
       >
         <Layer>
           {/* Grid */}
@@ -373,7 +412,7 @@ export const FloorPlanCanvas: React.FC<FloorPlanCanvasProps> = ({
             width={floorPlan.dimensions.width * PIXELS_PER_METER}
             height={floorPlan.dimensions.height * PIXELS_PER_METER}
             stroke="#000"
-            strokeWidth={2}
+            strokeWidth={isMobile ? 3 : 2} // Thicker lines for mobile
             fill="transparent"
           />
           

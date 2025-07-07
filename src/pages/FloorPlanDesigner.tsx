@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Download, Undo, Redo, ZoomIn, ZoomOut, Grid, Ruler, Home, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Save, Download, Undo, Redo, ZoomIn, ZoomOut, Grid, Ruler, Home, Plus, Menu, X, Layers, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,8 @@ import { FloorPlan, Point, Wall, Door, Window, Room, Furniture } from '@/types/f
 import { generateProfessionalFloorPlan, GenerationOptions } from '@/utils/automaticFloorPlanGenerator';
 import { useToast } from '@/hooks/use-toast';
 import { db, Project } from '@/lib/database';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const FloorPlanDesigner = () => {
   const navigate = useNavigate();
@@ -50,6 +52,9 @@ const FloorPlanDesigner = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showProjectList, setShowProjectList] = useState(true);
+  const [showLeftPanel, setShowLeftPanel] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(false);
+  const isMobile = useIsMobile();
 
   // Load all projects
   useEffect(() => {
@@ -357,16 +362,16 @@ const FloorPlanDesigner = () => {
 
   return (
     <div className="h-screen bg-subtle flex flex-col">
-      {/* Header */}
+      {/* Mobile Header */}
       <motion.header 
         className="bg-construction text-primary-foreground shadow-construction"
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="container mx-auto px-4 py-3">
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
@@ -375,12 +380,97 @@ const FloorPlanDesigner = () => {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <h1 className="text-lg font-bold">
-                {selectedProject ? `مخطط ${selectedProject.name}` : 'مصمم المخططات'}
-              </h1>
+              <div>
+                <h1 className={`font-bold ${isMobile ? 'text-sm' : 'text-lg'}`}>
+                  {selectedProject ? (isMobile ? selectedProject.name : `مخطط ${selectedProject.name}`) : 'مصمم المخططات'}
+                </h1>
+                {!isMobile && selectedProject && (
+                  <p className="text-primary-foreground/80 text-xs">
+                    {selectedProject.length}×{selectedProject.width} متر - {selectedProject.floors} طوابق
+                  </p>
+                )}
+              </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {/* Mobile Panel Toggles */}
+              {isMobile && (
+                <>
+                  <Sheet open={showLeftPanel} onOpenChange={setShowLeftPanel}>
+                    <SheetTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary-foreground hover:bg-primary-foreground/20"
+                      >
+                        <Layers className="h-4 w-4" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-80 p-0">
+                      <div className="p-4 space-y-4 h-full overflow-y-auto">
+                        <h3 className="font-bold mb-4">أدوات التصميم</h3>
+                        <AutoGenerationPanel 
+                          onGenerate={() => {
+                            setShowLeftPanel(false);
+                            toast({
+                              title: "تم إنشاء المخطط",
+                              description: "تم إنشاء مخطط المنزل بنجاح",
+                            });
+                          }}
+                        />
+                        
+                        <ToolBar
+                          selectedTool={selectedTool}
+                          onToolSelect={(tool) => {
+                            setSelectedTool(tool);
+                            setShowLeftPanel(false);
+                          }}
+                        />
+                        
+                        <LayerManager
+                          layers={floorPlan.layers}
+                          onLayerUpdate={(layerId, updates) => {
+                            // Implement layer update
+                          }}
+                          onLayerAdd={() => {
+                            // Implement layer add
+                          }}
+                          onLayerDelete={(layerId) => {
+                            // Implement layer delete
+                          }}
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+
+                  <Sheet open={showRightPanel} onOpenChange={setShowRightPanel}>
+                    <SheetTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-primary-foreground hover:bg-primary-foreground/20"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-80 p-0">
+                      <div className="p-4 space-y-4 h-full overflow-y-auto">
+                        <h3 className="font-bold mb-4">خصائص العنصر</h3>
+                        <PropertiesPanel
+                          selectedElement={selectedElement}
+                          elementType={selectedElementType}
+                          onElementUpdate={(elementId, updates) => updateElement(elementId, selectedElementType, updates)}
+                          onElementDelete={(elementId) => deleteElement(elementId, selectedElementType)}
+                          onElementDuplicate={(elementId) => duplicateElement(elementId, selectedElementType)}
+                        />
+                        
+                        <ValidationPanel floorPlan={floorPlan} />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </>
+              )}
+              
               {/* Zoom Controls */}
               <Button
                 variant="ghost"
@@ -388,53 +478,55 @@ const FloorPlanDesigner = () => {
                 onClick={handleZoomOut}
                 className="text-primary-foreground hover:bg-primary-foreground/20"
               >
-                <ZoomOut className="h-4 w-4" />
+                <ZoomOut className="h-3 w-3" />
               </Button>
-              <span className="text-sm px-2">{Math.round(zoom * 100)}%</span>
+              {!isMobile && <span className="text-xs px-1">{Math.round(zoom * 100)}%</span>}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleZoomIn}
                 className="text-primary-foreground hover:bg-primary-foreground/20"
               >
-                <ZoomIn className="h-4 w-4" />
+                <ZoomIn className="h-3 w-3" />
               </Button>
               
-              {/* History Controls */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={undo}
-                className="text-primary-foreground hover:bg-primary-foreground/20"
-              >
-                <Undo className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={redo}
-                className="text-primary-foreground hover:bg-primary-foreground/20"
-              >
-                <Redo className="h-4 w-4" />
-              </Button>
-              
-              {/* File Operations */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSave}
-                className="text-primary-foreground hover:bg-primary-foreground/20"
-              >
-                <Save className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExport}
-                className="text-primary-foreground hover:bg-primary-foreground/20"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
+              {/* History & File Controls */}
+              {!isMobile && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={undo}
+                    className="text-primary-foreground hover:bg-primary-foreground/20"
+                  >
+                    <Undo className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={redo}
+                    className="text-primary-foreground hover:bg-primary-foreground/20"
+                  >
+                    <Redo className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSave}
+                    className="text-primary-foreground hover:bg-primary-foreground/20"
+                  >
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleExport}
+                    className="text-primary-foreground hover:bg-primary-foreground/20"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -442,87 +534,165 @@ const FloorPlanDesigner = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-80 bg-white border-r flex flex-col overflow-y-auto">
-          <div className="p-4 space-y-4">
-            <AutoGenerationPanel 
-              onGenerate={() => {
-                toast({
-                  title: "تم إنشاء المخطط",
-                  description: "تم إنشاء مخطط المنزل بنجاح",
-                });
-              }}
-            />
-            
-            <ToolBar
-              selectedTool={selectedTool}
-              onToolSelect={setSelectedTool}
-            />
-            
-            <LayerManager
-              layers={floorPlan.layers}
-              onLayerUpdate={(layerId, updates) => {
-                // Implement layer update
-              }}
-              onLayerAdd={() => {
-                // Implement layer add
-              }}
-              onLayerDelete={(layerId) => {
-                // Implement layer delete
-              }}
-            />
-          </div>
-        </div>
+        {/* Desktop Left Sidebar */}
+        {!isMobile && (
+          <motion.div 
+            className="w-72 bg-white border-r flex flex-col overflow-y-auto"
+            initial={{ x: -300 }}
+            animate={{ x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="p-4 space-y-4">
+              <AutoGenerationPanel 
+                onGenerate={() => {
+                  toast({
+                    title: "تم إنشاء المخطط",
+                    description: "تم إنشاء مخطط المنزل بنجاح",
+                  });
+                }}
+              />
+              
+              <ToolBar
+                selectedTool={selectedTool}
+                onToolSelect={setSelectedTool}
+              />
+              
+              <LayerManager
+                layers={floorPlan.layers}
+                onLayerUpdate={(layerId, updates) => {
+                  // Implement layer update
+                }}
+                onLayerAdd={() => {
+                  // Implement layer add
+                }}
+                onLayerDelete={(layerId) => {
+                  // Implement layer delete
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
 
-        {/* Canvas Area */}
+        {/* Canvas Area - Full screen on mobile */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 relative">
-            <FloorPlanCanvas
-              floorPlan={floorPlan}
-              selectedTool={selectedTool}
-              zoom={zoom}
-              offset={offset}
-              onElementSelect={handleElementSelect}
-              onElementMove={handleElementMove}
-              onCanvasClick={handleCanvasClick}
-            />
+            <motion.div
+              className="w-full h-full"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+            >
+              <FloorPlanCanvas
+                floorPlan={floorPlan}
+                selectedTool={selectedTool}
+                zoom={zoom}
+                offset={offset}
+                onElementSelect={handleElementSelect}
+                onElementMove={handleElementMove}
+                onCanvasClick={handleCanvasClick}
+              />
+            </motion.div>
           </div>
           
-          {/* Bottom Panel - Mini Map */}
-          <div className="h-64 bg-white border-t p-4">
-            <MiniMap
-              floorPlan={floorPlan}
-              viewportBounds={{
-                x: -offset.x / zoom,
-                y: -offset.y / zoom,
-                width: 800 / zoom,
-                height: 600 / zoom
-              }}
-              onViewportChange={(newBounds) => {
-                setOffset({
-                  x: -newBounds.x * zoom,
-                  y: -newBounds.y * zoom
-                });
-              }}
-            />
-          </div>
+          {/* Bottom Panel - Mini Map (Desktop only) */}
+          {!isMobile && (
+            <motion.div 
+              className="h-48 bg-white border-t"
+              initial={{ y: 200 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <div className="p-3">
+                <h4 className="text-sm font-semibold mb-2 text-center">خريطة صغيرة</h4>
+                <MiniMap
+                  floorPlan={floorPlan}
+                  viewportBounds={{
+                    x: -offset.x / zoom,
+                    y: -offset.y / zoom,
+                    width: 800 / zoom,
+                    height: 600 / zoom
+                  }}
+                  onViewportChange={(newBounds) => {
+                    setOffset({
+                      x: -newBounds.x * zoom,
+                      y: -newBounds.y * zoom
+                    });
+                  }}
+                />
+              </div>
+            </motion.div>
+          )}
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-80 bg-white border-l flex flex-col overflow-y-auto">
-          <div className="p-4 space-y-4">
-            <PropertiesPanel
-              selectedElement={selectedElement}
-              elementType={selectedElementType}
-              onElementUpdate={(elementId, updates) => updateElement(elementId, selectedElementType, updates)}
-              onElementDelete={(elementId) => deleteElement(elementId, selectedElementType)}
-              onElementDuplicate={(elementId) => duplicateElement(elementId, selectedElementType)}
-            />
-            
-            <ValidationPanel floorPlan={floorPlan} />
-          </div>
-        </div>
+        {/* Desktop Right Sidebar */}
+        {!isMobile && (
+          <motion.div 
+            className="w-72 bg-white border-l flex flex-col overflow-y-auto"
+            initial={{ x: 300 }}
+            animate={{ x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="p-4 space-y-4">
+              <PropertiesPanel
+                selectedElement={selectedElement}
+                elementType={selectedElementType}
+                onElementUpdate={(elementId, updates) => updateElement(elementId, selectedElementType, updates)}
+                onElementDelete={(elementId) => deleteElement(elementId, selectedElementType)}
+                onElementDuplicate={(elementId) => duplicateElement(elementId, selectedElementType)}
+              />
+              
+              <ValidationPanel floorPlan={floorPlan} />
+            </div>
+          </motion.div>
+        )}
       </div>
+
+      {/* Mobile Bottom Action Bar */}
+      {isMobile && (
+        <motion.div 
+          className="bg-white border-t p-3 flex justify-center gap-4"
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={undo}
+            className="flex flex-col items-center gap-1 h-auto py-2"
+          >
+            <Undo className="h-4 w-4" />
+            <span className="text-xs">تراجع</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={redo}
+            className="flex flex-col items-center gap-1 h-auto py-2"
+          >
+            <Redo className="h-4 w-4" />
+            <span className="text-xs">إعادة</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSave}
+            className="flex flex-col items-center gap-1 h-auto py-2"
+          >
+            <Save className="h-4 w-4" />
+            <span className="text-xs">حفظ</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExport}
+            className="flex flex-col items-center gap-1 h-auto py-2"
+          >
+            <Download className="h-4 w-4" />
+            <span className="text-xs">تصدير</span>
+          </Button>
+        </motion.div>
+      )}
     </div>
   );
 };
